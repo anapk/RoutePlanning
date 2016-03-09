@@ -17,8 +17,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    signingConfigs{
-        debug{
+    signingConfigs {
+        debug {
             storeFile file("C:\\Users\\mim\\.android\\mim.keystore")
             keyAlias 'mim.keystore'
             keyPassword 'gjy062704'

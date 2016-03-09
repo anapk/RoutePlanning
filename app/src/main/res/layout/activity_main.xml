@@ -23,17 +23,31 @@
 
     <com.baidu.mapapi.map.MapView
         android:id="@+id/bmapView"
-        android:layout_marginTop="?attr/actionBarSize"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
         android:clickable="true" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/btn_loc"
+    <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        android:src="@android:drawable/ic_dialog_map" />
+        android:layout_margin="@dimen/fab_margin">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/btn_loc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_compass" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/btn_route"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/btn_loc"
+            android:layout_marginTop="@dimen/fab_margin"
+            android:src="@android:drawable/ic_dialog_map" />
+
+    </RelativeLayout>
 
 </android.support.design.widget.CoordinatorLayout>

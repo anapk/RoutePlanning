@@ -21,15 +21,28 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.route.BikingRouteResult;
+import com.baidu.mapapi.search.route.DrivingRouteLine;
+import com.baidu.mapapi.search.route.DrivingRoutePlanOption;
+import com.baidu.mapapi.search.route.DrivingRouteResult;
+import com.baidu.mapapi.search.route.OnGetRoutePlanResultListener;
+import com.baidu.mapapi.search.route.PlanNode;
+import com.baidu.mapapi.search.route.RoutePlanSearch;
+import com.baidu.mapapi.search.route.TransitRouteResult;
+import com.baidu.mapapi.search.route.WalkingRouteResult;
+import com.mim.routeplanning.overlayutil.DrivingRouteOverlay;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private MapView mMapView = null;
     private BaiduMap mBaiduMap = null;
-    private BDLocationListener myListener = new MyLocationListener();
+    private BDLocationListener myLocListener = null;
     private LocationClient mLocClient = null;
     private boolean isFirstLoc = true;
-    private BDLocation myCurLocation;
+    private BDLocation myCurLocation = null;
+    private RoutePlanSearch mSearch = null;
+    private OnGetRoutePlanResultListener myRouteListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,8 +51,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.btn_loc);
-        fab.setOnClickListener(this);
+        FloatingActionButton btnLoc = (FloatingActionButton) findViewById(R.id.btn_loc);
+        FloatingActionButton btnRoute = (FloatingActionButton) findViewById(R.id.btn_route);
+        btnLoc.setOnClickListener(this);
+        btnRoute.setOnClickListener(this);
         mMapView = (MapView) findViewById(R.id.bmapView);
         mMapView.showZoomControls(false);
         mBaiduMap = mMapView.getMap();
@@ -51,11 +66,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBaiduMap.setMyLocationConfigeration(config);
         // 定位初始化
         initLocation();
+        mSearch = RoutePlanSearch.newInstance();
+        myRouteListener = new MyRouteListener();
+        mSearch.setOnGetRoutePlanResultListener(myRouteListener);
     }
 
     private void initLocation() {
+        myLocListener = new MyLocationListener();
         mLocClient = new LocationClient(getApplicationContext());
-        mLocClient.registerLocationListener(myListener);
+        mLocClient.registerLocationListener(myLocListener);
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy
         );//可选，默认高精度，设置定位模式，高精度，低功耗，仅设备
@@ -112,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mSearch.destroy();
         // 当不需要定位图层时关闭定位图层
         mBaiduMap.setMyLocationEnabled(false);
         mMapView.onDestroy();
@@ -131,8 +151,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.btn_loc) {
-            loc();
+        switch (v.getId()) {
+            case R.id.btn_loc:
+                loc();
+                break;
+            case R.id.btn_route:
+                PlanNode stNode = PlanNode.withCityNameAndPlaceName("西安", "西安电子科技大学");
+                PlanNode enNode = PlanNode.withCityNameAndPlaceName("西安", "公交五公司");
+                mSearch.drivingSearch((new DrivingRoutePlanOption())
+                        .from(stNode)
+                        .to(enNode));
+                break;
+            default:
+                break;
         }
     }
 
@@ -168,6 +199,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 isFirstLoc = false;
                 loc();
             }
+        }
+    }
+
+    private class MyRouteListener implements OnGetRoutePlanResultListener {
+
+        @Override
+        public void onGetWalkingRouteResult(WalkingRouteResult walkingRouteResult) {
+
+        }
+
+        @Override
+        public void onGetTransitRouteResult(TransitRouteResult transitRouteResult) {
+
+        }
+
+        @Override
+        public void onGetDrivingRouteResult(DrivingRouteResult drivingRouteResult) {
+            if (drivingRouteResult == null || drivingRouteResult.error != drivingRouteResult.error.NO_ERROR) {
+                //未找到结果
+                return;
+            }
+            if (drivingRouteResult.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+                //起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+                //result.getSuggestAddrInfo()
+                return;
+            }
+            if (drivingRouteResult.error == SearchResult.ERRORNO.NO_ERROR) {
+                DrivingRouteLine route = drivingRouteResult.getRouteLines().get(0);
+                //创建驾车路线规划线路覆盖物
+                DrivingRouteOverlay overlay = new DrivingRouteOverlay(mBaiduMap);
+                overlay.setData(route);
+                overlay.addToMap();
+                overlay.zoomToSpan();
+            }
+        }
+
+        @Override
+        public void onGetBikingRouteResult(BikingRouteResult bikingRouteResult) {
+
         }
     }
 }
